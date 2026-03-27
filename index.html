@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test de Conducción</title>
+<style>
+body{font-family:Arial;margin:0;background:#f5f7fa}
+.container{max-width:800px;margin:auto;padding:20px}
+.card{background:white;padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}
+h1{text-align:center}
+button{padding:10px 20px;border:none;border-radius:10px;background:#007bff;color:white;font-size:16px;cursor:pointer}
+button:hover{background:#0056b3}
+.result{font-size:18px;font-weight:bold}
+.correct{color:green}
+.incorrect{color:red}
+img{max-width:150px}
+.flex{display:flex;gap:20px;align-items:center}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Test de Conducción 🚗</h1>
+<div id="quiz"></div>
+<button onclick="submitQuiz()">Finalizar Test</button>
+<div id="result"></div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<script>
+// CONFIGURA TU FIREBASE AQUÍ
+const firebaseConfig = {
+  apiKey: "AIzaSyCo84bZsDFAzfPskWY9cgEEuH9g5BEsshQ",
+  authDomain: "appcursorbl.firebaseapp.com",
+  projectId: "appcursorbl",
+  storageBucket: "appcursorbl.firebasestorage.app",
+  messagingSenderId: "256879691563",
+  appId: "1:256879691563:web:1cb973f731c0e3e4c8276e"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// PREGUNTAS
+const questions = [
+
+    {
+    type: "multiple",
+    question: "¿Cuál es la distancia de frenado aproximada de un vehiculo que circula a 50 km/h en condiciones normales?",
+    options: ["10 metros","25 metros","50 metros","70 metros"],
+    correct: 2
+  },
+
+  {
+    type: "multiple",
+    question: "¿Que debes hacer al momento de virar en una intersección?",
+    options: [
+    "Debes respetar el derecho de preferente de paso de los peatones y vehículos en el cruce.",
+    "Tienes preferencia sobre los peatones y vehiculos en el cruce.",
+    "Puedes continuar sin detenerte si tienes prisa.",
+    "Continuar si el semáforo está en rojo."
+    ],
+    correct: 0
+  },
+  {
+    type: "text",
+    question: "¿Qué documento es obligatorio llevar al momento de conducir?",
+    answer: "licencia"
+  },
+  {
+    type: "image",
+    question: "¿Qué significa esta señal?",
+    image: "https://www.shutterstock.com/image-photo/clear-vivid-image-red-spanishlanguage-260nw-2641059629.jpg",
+    options: ["Pare","Ceda el paso","Prohibido","Velocidad"],
+    correct: 0
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa una luz roja en un semáforo?",
+    options: [
+    "Precaución",
+    "Detenerse",
+    "Avanzar",
+    "Acelerar"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es la velocidad máxima en zona urbana (salvo señalización)?",
+    options: [
+    "30 km/h",
+    "50 km/h",
+    "60 km/h",
+    "80 km/h"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una señal triangular?",
+    options: [
+    "Obligación",
+    "Información",
+    "Advertencia",
+    "Prohibición"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Quién tiene preferencia en un cruce sin señalización?",
+    options: [
+    "El más rápido",
+    "El que viene por la derecha",
+    "El más grande",
+    "El que toca la bocina"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Cuándo debes usar el cinturón de seguridad?",
+    options: [
+    "Solo en carretera",
+    "Siempre que estés en el vehículo",
+    "Cuando lleves pasajeros",
+    "Solo si vas a velocidades altas"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa una línea continua en la carretera?",
+    options: [
+    "Adelantar permitido",
+    "Adelantar prohibido",
+    "Estacionar permitido",
+    "Girar libremente"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer ante una señal de “PARE”?",
+    options: [
+    "Reducir velocidad",
+    "Detenerse completamente",
+    "Seguir si no viene nadie",
+    "Tocar bocina"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica la luz amarilla del semáforo?",
+    options: [
+    "Avanzar rápido",
+    "Detenerse si es posible",
+    "Ignorar",
+    "Retroceder"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Para qué sirven los espejos retrovisores?",
+    options: [
+    "Decoración",
+    "Ver hacia atrás",
+    "Alumbrar",
+    "Aumentar velocidad"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa conducir bajo la influencia del alcohol?",
+    options: [
+    "Manejar más lento",
+    "Manejar más seguro",
+    "Riesgo de accidente",
+    "Nada"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué debe hacer al escuchar una sirena de emergencia?",
+    options: [
+    "Acelerar",
+    "Ignorar",
+    "Ceder el paso",
+    "Detenerse en medio"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Cuándo usar luces bajas?",
+    options: [
+    "Solo de día",
+    "Siempre",
+    "De noche o poca visibilidad",
+    "Nunca"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si un peatón cruza por paso de cebra?",
+    options: [
+    "Acelerar",
+    "Ignorar",
+    "Detenerse",
+    "Tocar bocina"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es la distancia mínima para señalizar con triángulos en panne (en pana)?",
+    options: [
+    "5 metros",
+    "10 metros",
+    "50 metros",
+    "100 metros"
+    ],
+    correct: 3
+  },
+
+  {
+    type: "multiple",
+    question: "¿Qué debe hacer un conductor al aproximarse a un paso de peatones sin semáforo?",
+    options: [
+      "Acelerar para pasar primero",
+      "Detenerse solo si hay personas cruzando",
+      "Detenerse siempre",
+      "Tocar bocina"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es la distancia de seguimiento recomendada en carretera?",
+    options: [
+      "1 segundo",
+      "2 segundos",
+      "3 segundos o más",
+      "No importa"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa una doble línea continua en la calzada?",
+    options: [
+      "Se puede adelantar con precaución",
+      "Adelantamiento permitido solo de día",
+      "Adelantamiento prohibido en ambos sentidos",
+      "Solo motos pueden adelantar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si un semáforo no funciona?",
+    options: [
+      "Ignorarlo",
+      "Seguir como si estuviera en verde",
+      "Respetar normas de cruce sin señalización",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Cuándo está permitido adelantar por la derecha?",
+    options: [
+      "Siempre",
+      "Nunca",
+      "Cuando el vehículo de adelante gira a la izquierda",
+      "Solo en carretera"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué efecto tiene el alcohol en la conducción?",
+    options: [
+      "Mejora reflejos",
+      "Aumenta concentración",
+      "Disminuye capacidades",
+      "No afecta"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer al enfrentar una curva cerrada?",
+    options: [
+      "Acelerar",
+      "Mantener velocidad alta",
+      "Reducir velocidad antes de entrar",
+      "Frenar dentro de la curva bruscamente"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una señal de tránsito circular con borde rojo?",
+    options: [
+      "Obligación",
+      "Información",
+      "Prohibición",
+      "Advertencia"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué debe hacer si pierde el control del vehículo?",
+    options: [
+      "Frenar bruscamente",
+      "Soltar el volante",
+      "Mantener la calma y controlar dirección",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si un vehículo lo adelanta?",
+    options: [
+      "Acelerar",
+      "Bloquear el paso",
+      "Mantener velocidad o reducir",
+      "Cambiar de pista"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una luz verde intermitente?",
+    options: [
+      "Avanzar siempre",
+      "Cambio próximo a amarillo",
+      "Detenerse",
+      "Retroceder"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es el principal riesgo de usar el celular al conducir?",
+    options: [
+      "Multa",
+      "Distracción",
+      "Gasto de batería",
+      "Ninguno"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si hay neblina densa?",
+    options: [
+      "Usar luces altas",
+      "Acelerar",
+      "Usar luces bajas y reducir velocidad",
+      "Apagar luces"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una señal de 'Ceda el paso'?",
+    options: [
+      "Detenerse siempre",
+      "Tener preferencia",
+      "Ceder preferencia a otros vehículos",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si un peatón cruza imprudentemente?",
+    options: [
+      "Acelerar",
+      "Ignorar",
+      "Frenar y evitar accidente",
+      "Tocar bocina solamente"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué distancia mínima se recomienda al estacionar cerca de una esquina?",
+    options: [
+      "2 metros",
+      "5 metros",
+      "10 metros",
+      "15 metros"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si un neumático revienta?",
+    options: [
+      "Frenar bruscamente",
+      "Acelerar",
+      "Sujetar firme el volante y reducir velocidad",
+      "Soltar el volante"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa conducir a la defensiva?",
+    options: [
+      "Conducir rápido",
+      "Anticiparse a riesgos",
+      "Ignorar errores de otros",
+      "Acelerar siempre"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer al acercarse a un cruce ferroviario?",
+    options: [
+      "Acelerar",
+      "Ignorar señales",
+      "Detenerse si es necesario y mirar ambos lados",
+      "Tocar bocina"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es la principal causa de accidentes de tránsito?",
+    options: [
+      "Clima",
+      "Estado del vehículo",
+      "Error humano",
+      "Señales"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué debe hacer si un vehículo de emergencia se aproxima por detrás con sirena y luces?",
+    options: [
+      "Acelerar para no estorbar",
+      "Mantener velocidad",
+      "Orillarse y detenerse",
+      "Ignorarlo"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una línea segmentada en la calzada?",
+    options: [
+      "Adelantamiento prohibido",
+      "Adelantamiento permitido con precaución",
+      "Detención obligatoria",
+      "Uso exclusivo de buses"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué debe hacer al incorporarse a una autopista?",
+    options: [
+      "Detenerse completamente",
+      "Entrar sin mirar",
+      "Ajustar velocidad al flujo del tránsito",
+      "Acelerar al máximo"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es el uso correcto de las luces altas?",
+    options: [
+      "Siempre en ciudad",
+      "Solo cuando no hay vehículos de frente",
+      "Siempre de día",
+      "En túneles"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si el vehículo comienza a patinar en una superficie resbaladiza?",
+    options: [
+      "Frenar bruscamente",
+      "Girar en sentido contrario al derrape",
+      "Mantener dirección y suavizar maniobras",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa una señal rectangular?",
+    options: [
+      "Prohibición",
+      "Advertencia",
+      "Información",
+      "Obligación"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer al estacionar en pendiente descendente?",
+    options: [
+      "Girar ruedas hacia la calzada",
+      "Girar ruedas hacia la vereda",
+      "Dejar volante recto",
+      "Acelerar"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué factor aumenta la distancia de frenado?",
+    options: [
+      "Baja velocidad",
+      "Pavimento seco",
+      "Lluvia",
+      "Buen estado de frenos"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si el semáforo está en verde pero el cruce está congestionado?",
+    options: [
+      "Avanzar igual",
+      "Esperar hasta poder cruzar completamente",
+      "Tocar bocina",
+      "Acelerar"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una señal de fondo amarillo?",
+    options: [
+      "Información",
+      "Advertencia de peligro",
+      "Obligación",
+      "Estacionamiento"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si se aproxima a una intersección con señal 'PARE' y no hay otros vehículos?",
+    options: [
+      "Pasar lentamente",
+      "Ignorar",
+      "Detenerse completamente",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Cuál es la función del sistema ABS?",
+    options: [
+      "Aumentar velocidad",
+      "Evitar bloqueo de ruedas al frenar",
+      "Reducir consumo",
+      "Mejorar luces"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si un ciclista circula delante de usted?",
+    options: [
+      "Adelantar sin distancia",
+      "Tocar bocina fuerte",
+      "Mantener distancia segura",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una flecha verde en un semáforo?",
+    options: [
+      "Giro permitido en esa dirección",
+      "Detenerse",
+      "Precaución",
+      "Prohibido girar"
+    ],
+    correct: 0
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer en caso de aquaplaning?",
+    options: [
+      "Frenar fuerte",
+      "Acelerar",
+      "Soltar acelerador y mantener control",
+      "Girar bruscamente"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué elemento reduce lesiones en un accidente?",
+    options: [
+      "Radio",
+      "Cinturón de seguridad",
+      "Luces",
+      "Ventanas abiertas"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si una luz del tablero indica falla?",
+    options: [
+      "Ignorar",
+      "Continuar igual",
+      "Revisar lo antes posible",
+      "Acelerar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una señal de zona escolar?",
+    options: [
+      "Acelerar",
+      "Reducir velocidad y extremar precaución",
+      "Ignorar",
+      "Solo peatones"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer al cambiar de pista?",
+    options: [
+      "No señalizar",
+      "Mirar espejos y señalizar",
+      "Acelerar sin mirar",
+      "Tocar bocina"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué significa luz roja intermitente?",
+    options: [
+      "Avanzar",
+      "Precaución",
+      "Detención obligatoria",
+      "Ignorar"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si se encuentra con un conductor agresivo?",
+    options: [
+      "Responder igual",
+      "Ignorar y mantener calma",
+      "Competir",
+      "Frenar de golpe"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer antes de iniciar un viaje largo?",
+    options: [
+      "No revisar nada",
+      "Revisar estado del vehículo",
+      "Solo combustible",
+      "Acelerar"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué indica una señal de prohibido estacionar?",
+    options: [
+      "Se puede detener",
+      "No se puede estacionar",
+      "Se puede parar libremente",
+      "Solo motos"
+    ],
+    correct: 1
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer si hay hielo en la calzada?",
+    options: [
+      "Acelerar",
+      "Frenar fuerte",
+      "Conducir suavemente y lento",
+      "Girar brusco"
+    ],
+    correct: 2
+  },
+  {
+    type: "multiple",
+    question: "¿Qué hacer al conducir de noche?",
+    options: [
+      "Sin luces",
+      "Usar luces adecuadas",
+      "Acelerar más",
+      "Cerrar ojos"
+    ],
+    correct: 1
+  },
+
+];
+
+let selectedQuestions = [];
+const STORAGE_KEY = "quiz_progreso";
+
+// 🔀 MEZCLAR Y TOMAR 30 PREGUNTAS
+function getRandomQuestions(array, num){
+  let shuffled = [...array].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, num);
+}
+
+// 💾 GUARDAR PROGRESO
+function saveProgress(){
+  let answers = [];
+
+  selectedQuestions.forEach((q,i)=>{
+    const selected = document.querySelector(`input[name='q${i}']:checked`);
+    answers[i] = selected ? parseInt(selected.value) : null;
+  });
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    questions: selectedQuestions,
+    answers: answers
+  }));
+}
+
+// 📥 CARGAR PROGRESO
+function loadProgress(){
+  let data = localStorage.getItem(STORAGE_KEY);
+  if(data){
+    return JSON.parse(data);
+  }
+  return null;
+}
+
+// MOSTRAR PREGUNTAS
+function loadQuiz(){
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = "";
+
+  let saved = loadProgress();
+
+  if(saved){
+    selectedQuestions = saved.questions;
+  }else{
+    selectedQuestions = getRandomQuestions(questions, 30);
+  }
+
+  selectedQuestions.forEach((q,i)=>{
+    let html = `<div class='card'><p><b>${i+1}. ${q.question}</b></p>`;
+
+    if(q.type === "multiple"){
+      q.options.forEach((opt,index)=>{
+        html += `<label>
+          <input type='radio' name='q${i}' value='${index}' onchange='saveProgress()'>
+          ${opt}
+        </label><br>`;
+      });
+    }
+
+    html += `</div>`;
+    quiz.innerHTML += html;
+  });
+
+  // 🔁 RESTAURAR RESPUESTAS
+  if(saved){
+    saved.answers.forEach((ans,i)=>{
+      if(ans !== null){
+        let input = document.querySelector(`input[name='q${i}'][value='${ans}']`);
+        if(input) input.checked = true;
+      }
+    });
+  }
+}
+
+loadQuiz();
+
+// CORREGIR
+function submitQuiz(){
+  let score = 0;
+  let total = selectedQuestions.length;
+
+  selectedQuestions.forEach((q,i)=>{
+    const selected = document.querySelector(`input[name='q${i}']:checked`);
+    let userAnswer = selected ? parseInt(selected.value) : null;
+
+    if(userAnswer === q.correct){
+      score++;
+    }
+  });
+
+  let percentage = Math.round((score / total) * 100);
+  let aprobado = percentage >= 80;
+
+  document.getElementById("result").innerHTML = `
+    <div class='card result'>
+      <h2>${aprobado ? "✅ APROBADO" : "❌ REPROBADO"}</h2>
+      <p><b>${percentage}%</b> — acertaste ${score} de ${total}</p>
+    </div>
+  `;
+
+  // 💾 GUARDAR RESULTADO FINAL
+  db.collection("resultados").add({
+    fecha: new Date(),
+    puntaje: score,
+    total: total,
+    porcentaje: percentage,
+    aprobado: aprobado
+  });
+
+  // 🧹 OPCIONAL: borrar progreso al terminar
+  localStorage.removeItem(STORAGE_KEY);
+  
+}
+
+</script>
+</body>
+</html>
