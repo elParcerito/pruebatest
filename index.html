@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Licencia PRO</title>
+
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  background: linear-gradient(135deg,#e3f2fd,#fce4ec);
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+h2 { text-align:center; }
+
+.question { margin-bottom:20px; }
+
+.option {
+  display:block;
+  padding:12px;
+  margin:6px 0;
+  border-radius:8px;
+  border:1px solid #ddd;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.option:hover { background:#f1f1f1; }
+
+.selected { background:#fff3cd !important; } /* amarillo suave */
+.correct { background:#c8f7c5 !important; }
+.incorrect { background:#f7c5c5 !important; }
+
+button {
+  padding:12px 18px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  margin:5px;
+  font-weight:bold;
+}
+
+.primary { background:#1976d2; color:white; }
+.secondary { background:#9e9e9e; color:white; }
+
+.grid {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:15px;
+}
+
+.grid div {
+  width:32px;
+  height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:6px;
+  font-weight:bold;
+}
+
+.green { background:#c8f7c5; }
+.red { background:#f7c5c5; }
+
+.hidden { display:none; }
+
+.resultBox {
+  text-align:center;
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div id="quizView" class="card">
+<h2>Simulador de Examen</h2>
+<div id="quiz"></div>
+
+<button class="primary" onclick="submitQuiz()">Finalizar</button>
+<button class="secondary" onclick="restart()">Reiniciar</button>
+
+<div id="result" class="resultBox"></div>
+
+<button class="primary" onclick="goToReview()">Ver Respuestas</button>
+<button class="primary" onclick="takeScreenshot()">Descargar Resultado 📸</button>
+</div>
+
+<div id="reviewView" class="card hidden">
+<h2>Revisión de Respuestas</h2>
+<div id="reviewSection"></div>
+
+<button class="primary" onclick="backToQuiz()">Volver al examen</button>
+</div>
+
+</div>
+
+<script>
+let questions = [
+    /*preg 1*/
+  { q: "En un automóvil, ¿Cuál de los siguientes elementos reduce el riesgo de lesiones de cuello en una colisión?", 
+  options: [
+    "A) Un cinturón de seguridad ajustado.",
+    "B) Un airbag frontal.",
+    "C) Un volante acolchado.",
+    "D) Un asiento con apoyacabezas ajustado en forma apropiada"], answer:
+    [3] },
+
+    /*preg 2*/
+  { q: "La presión de los neumáticos debe revisarse:", 
+  options: [
+    "A) Cuando los neumáticos están fríos.",
+    "B) Cuando los neumáticos están calientes.",
+    "C) Después de conducir 500 km.",
+    "D) Solo en invierno."], answer: 
+    [0] },
+
+    /*preg 3*/
+    { q: "Las luces de advertencia de peligro deberían ser usadas:", 
+  options: [
+    "A) Para indicar que va a detenerse.",
+    "B) Para advertir a quienes vienen detrás de un peligro que hay más adelante.",
+    "C) Para advertir a quienes vienen detrás suyo que usted pretende virar.",
+    "D) Para encender las luces altas."], answer: 
+    [1] },
+
+    /*preg 4*/
+    { q: "¿Cuáles son las 2 principales razones por las cuales no debe desengancharse el motor al ir cuesta abajo? (Respuesta múltiple)", 
+  options: [
+    "A) Porque tendrá menor control del frenado y dirección.",
+    "B) Porque el vehículo agarrará velocidad.",
+    "C) Porque el consumo de combustible será mayor.",
+    "D) Porque el motor se desgasta menos."], answer: 
+    [0, 1] },
+
+    /*preg 5*/
+    { q: "Usted conduce un vehículo con frenos y neumáticos en buenas condiciones. La superficie de calzada está seca. ¿Cuál es la distancia aproximada de detención total (distancia de reacción MÁS distancia de frenado) si usted va a 70 km/h?", 
+  options: [
+    "A) Unos 30 metros.",
+    "B) Unos 60 metros.",
+    "C) Unos 45 metros.",
+    "D) Unos 20 metros."], answer: 
+    [2] },
+
+    /*preg 6*/
+    { q: "¿Qué efecto(s) sobre la visión tiene el conducir a unos 100 km/h? (Respuesta múltiple)", 
+  options: [
+    "A) La visión se vuelve más nítida.",
+    "B) El campo visual se reduce, ya que a esa velocidad se tiende a fijar la mirada recta a lo lejos.",
+    "C) Resulta más difícil percibir movimientos a los lados de la carretera.",
+    "D) Se reduce la fatiga."], answer: 
+    [1, 2] },
+
+    /*preg 7*/
+    { q: "Usted está tomando unos remedios que probablemente afectarán su conducción. ¿Qué debería hacer?", 
+  options: [
+    "A) Conducir con cuidado.",
+    "B) Tomar menos remedios.",
+    "C) Esperar a que pasen los efectos.",
+    "D) Solicitar consejo médico antes de conducir."], answer: 
+    [3] },
+
+    /*preg 8*/
+    { q: "Usted está a punto de conducir, pero se siente enfermo. Usted debería...", 
+  options: [
+    "A) Conducir lentamente.",
+    "B) Tomar un medicamento.",
+    "C) No manejar",
+    "D) Llamar a un amigo para que me lleve."], answer: 
+    [2] },
+
+    /*preg 9*/
+    { q: "Usted comienza a sentir cansancio en un viaje. ¿Qué debería hacer?", 
+  options: [
+    "A) Aumentar la velocidad para llegar antes.",
+    "B) Escuchar música alta.",
+    "C) Terminar el viaje y después dormir.",
+    "D) Detenerse y dormir una pequeña siesta o detenerse y tomar un poco de café."], answer: 
+    [3] },
+
+    /*preg 10*/
+    { q: "El tiempo que transcurre desde que usted percibe un peligro hasta que actúa se denomina tiempo de reacción. En una emergencia, ¿qué factor influye en su tiempo de reacción?", 
+  options: [
+    "A) Su estado de salud.",
+    "B) La velocidad del vehículo.",
+    "C) El tipo de vehículo.",
+    "D) La hora del día."], answer: 
+    [0,3] },
+
+    /*preg 11*/
+    { q: "Usted se aproxima a una curva hacia la izquierda. ¿Qué debería hacer?", 
+  options: [
+    "A) Mantenerse en el centro de la curva.",
+    "B) Mantenerse bien a la derecha para tener una mejor visual sobre la curva.",
+    "C) Mantenerse bien a la izquierda para evitar cualquier obstáculo que pueda haber en la cuneta.",
+    "D) Acelerar para salir rápido."], answer: 
+    [1] },
+
+    /*preg 12*/
+    { q: "Usted va conduciendo al lado de una fila de autos estacionados. De pronto ve una pelota rebotando en la calzada un poco más adelante. ¿Qué debería hacer usted?", 
+  options: [
+    "A) Acelerar para pasar rápido.",
+    "B) Cambiar de carril.",
+    "C) Ignorar la pelota.",
+    "D) Disminuir la velocidad y estar preparado para detenerse si aparece un niño."], answer: 
+    [3] },
+
+    /*preg 13*/
+    { q: "Usted llega a una intersección regulada por semáforo que se encuentra en rojo y, al mismo tiempo, un Carabinero le indica que avance, ¿qué debe hacer usted?", 
+  options: [
+    "A) Detenerse y esperar.",
+    "B) Avanzar, porque las instrucciones de un Carabinero prevalecen sobre las señales de tránsito.",
+    "C) Avanzar lentamente.",
+    "D) Dar vuelta atrás."], answer: 
+    [1] },
+
+    /*preg 14*/
+    { q: "Cuando dos vehículos van a cruzarse en una intersección en la que no hay señalización alguna, ¿quién debe ceder el paso?", 
+  options: [
+    "A) El que va más rápido.",
+    "B) El que viene de la derecha.",
+    "C) El que se acerca al cruce por la derecha del otro.",
+    "D) El que se acerca al cruce por la izquierda del otro."], answer: 
+    [3] },
+
+    /*preg 15*/
+    { q: "Usted ha alcanzado a un auto al que desea adelantar. ¿Cuáles son las 3 cosas más difíciles de juzgar?", 
+  options: [
+    "A) El punto de encuentro con el vehículo que viene en contra.",
+    "B) La velocidad del vehículo contrario.",
+    "C) La distancia al vehículo que viene en sentido contrario.",
+    "D) La longitud de la distancia de adelantamiento."], answer: 
+    [2, 3, 0] },
+
+    /*preg 16*/
+    { q: "Como norma general, antes de tomar una curva cerrada, usted debe...", 
+  options: [
+    "A) Acelerar antes de la curva.",
+    "B) Mantener la velocidad constante.",
+    "C) Frenar bruscamente.",
+    "D) Disminuir la velocidad, para luego acelerar gradualmente mientras la va recorriendo."], answer: 
+    [3] },
+
+    /*preg 17*/
+    { q: "Usted va a dejar su vehículo estacionado. ¿En qué caso puede dejarlo con el motor funcionando?", 
+  options: [
+    "A) En ningún caso.",
+    "B) Si está en una zona residencial.",
+    "C) Si hay alguien vigilando.",
+    "D) Si es por poco tiempo."], answer: 
+    [0] },
+
+    /*preg 18*/
+    { q: "Usted se aproxima a un cruce cebra. En la vereda hay peatones esperando cruzar. ¿Qué hace usted?", 
+  options: [
+    "A) Disminuye la velocidad y se prepara para detenerse.",
+    "B) Acelerar para pasar antes.",
+    "C) Detenerse completamente.",
+    "D) Cambiar de dirección."], answer: 
+    [0] },
+
+    /*preg 19*/
+    { q: "¿Cuál de los siguientes grupos de conductores tiene mayores probabilidades de verse involucrado en un accidente de tránsito?", 
+  options: [
+    "A) Los que tienen menos de 25 años.",
+    "B) Los que tienen más de 65 años.",
+    "C) Los que tienen experiencia.",
+    "D) Los que conducen camionetas."], answer: 
+    [0] },
+
+    /*preg 20*/
+    { q: "Usted va detrás de un camión articulado que se aproxima a un cruce. Su conductor señaliza hacia la derecha pero el vehículo se desplaza hacia la izquierda. ¿Qué debe hacer usted?", 
+  options: [
+    "A) Adelantar al camión.",
+    "B) Esperar detrás del camión",
+    "C) Cambiar de carril.",
+    "D) Acelerar para pasar."], answer: 
+    [1] },
+
+    /*preg 21*/
+    { q: "Usted desea adelantar a un motociclista que va delante suyo, ¿qué hace usted?", 
+  options: [
+    "A) Dar menos espacio lateral.",
+    "B) Conducir más rápido.",
+    "C) Le da tanto espacio lateral como le daría a un automóvil.",
+    "D) Ignorar al motociclista."], answer: 
+    [2] },
+
+    /*preg 22*/
+    { q: "¿De qué le advierte esta señal?<br><img src='https://practicatest.cl/static/img/test/CL/b41452912c07d39d9b524022719230ed.jpg' style='height:100px;'>", 
+  options: [
+    "A) De la posible presencia de escolares.",
+    "B) De la presencia de animales.",
+    "C) De un cruce peatonal.",
+    "D) De una zona escolar."], answer: 
+    [0] },
+
+    /*preg 23*/
+    { q: "¿Cuál o cuáles de las siguientes afirmaciones son correctas en cuanto a la conducción durante la noche?", 
+  options: [
+    "A) La conducción nocturna es más segura.",
+    "B) Nuestra limitada capacidad para ver de noche aumenta los riesgos de accidente.",
+    "C) Nuestra capacidad de apreciar distancias en la noche se ve disminuida.",
+    "D) El color de la ropa de un peatón influye en que éste pueda ser más o menos visible para los conductores."], answer: 
+    [1, 2, 3] },
+
+    /*preg 24*/
+    { q: "¿Cuál o cuáles de las siguientes afirmaciones es o son correctas en cuanto a la conducción bajo la lluvia?", 
+  options: [
+    "A) El riesgo de patinar es menor a baja velocidad.",
+    "B) Independientemente del estado de los neumáticos, el riesgo de que éstos patinen es mayor mientras mayor es la velocidad.",
+    "C) Los neumáticos nuevos patinan más.",
+    "D) La lluvia no afecta la adherencia."], answer: 
+    [1] },
+
+    /*preg 25*/
+    { q: "Al frenar en la calzada mojada su vehículo comienza a patinar. ¿Qué es lo primero que usted debería hacer?", 
+  options: [
+    "A) Soltar el freno completamente.",
+    "B) Tirar rápidamente del freno de mano.",
+    "C) Presionar el freno más fuerte.",
+    "D) Girar el volante bruscamente."], answer: 
+    [0] },
+
+    /*preg 26*/
+    { q: "Usted acaba de conducir a través de una calle inundada. ¿Qué es lo primero que debería hacer?", 
+  options: [
+    "A) Chequear sus frenos.",
+    "B) Continuar a la misma velocidad.",
+    "C) Frenar inmediatamente.",
+    "D) Limpiar el parabrisas."], answer: 
+    [0] },
+
+    /*preg 27*/
+    { q: "¿Cómo puede usted controlar mejor su vehículo al conducir con nieve?", 
+  options: [
+    "A) Conduciendo en un cambio bajo y sujetando el volante muy firmemente.",
+    "B) Acelerar para ganar tracción.",
+    "C) Frenar bruscamente.",
+    "D) Conduciendo lentamente manteniendo el cambio más alto posible."], answer: 
+    [3] },
+
+    /*preg 28*/
+    { q: "Hay mucha neblina y el auto que viene detrás suyo parece estar muy cerca. ¿Qué debería hacer usted?", 
+  options: [
+    "A) Encender sus luces de advertencia de peligro.",
+    "B) Acelerar para alejarse.",
+    "C) Frenar bruscamente.",
+    "D) Continuar con mucho cuidado"], answer: 
+    [3] },
+
+    /*preg 29*/
+    { q: "Usted va tirando un remolque pequeño que comienza a zigzaguear. ¿Qué hace usted?", 
+  options: [
+    "A) Acelerar para estabilizarlo.",
+    "B) Frenar bruscamente.",
+    "C) Girar el volante bruscamente.",
+    "D) Retira suavemente el pie del acelerador y disminuye la velocidad."], answer: 
+    [3] },
+
+    /*preg 30*/
+    { q: "¿Cómo puede usted detener el zigzagueo de una casa rodante que va remolcando?", 
+  options: [
+    "A) Acelerar para ganar control.",
+    "B) Frenar bruscamente.",
+    "C) Disminuyendo la velocidad gradualmente.",
+    "D) Girar el volante hacia el lado opuesto."], answer: 
+    [2] },
+
+    /*preg 31*/
+    { q: "Usted va circulando por una carretera de doble calzada con tres pistas por sentido. Las demarcaciones de pistas y de eje central están reforzadas con tachas reflectantes. Si a su izquierda las tachas son rojas y a su derecha son blancas, ¿por cuál pista va usted?", 
+  options: [
+    "A) Por la pista central.",
+    "B) Por la pista de la izquierda.",
+    "C) Por la pista de la derecha.",
+    "D) Por cualquier pista."], answer: 
+    [1] },
+
+    /*preg 32*/
+    { q: "¿Cuál de los siguientes tipos de señales le indica que no haga algo?<br><img src='https://practicatest.cl/static/img/test/CL/606d85e595b7b0e31d4b71d95cfefa78.jpg' style='height:100px;'>",
+  options: [
+    "A) Señales de advertencia.",
+    "B) Señales de información.",
+    "C) Señales de prohibición."], answer: 
+    [2] },
+
+    /*preg 33*/
+    { q: "¿Qué significa esta señal?<br><img src='https://practicatest.cl/static/img/test/CL/81282b98b52c8436f78f124c1fea7383.jpg' style='height:100px;'>", 
+  options: [
+    "A) Zona de construcción.",
+    "B) Zona escolar.",
+    "C) Zona peatonal.",
+    "D) Que se acerca a una zona donde es muy probable la presencia de ciclistas en la via."], answer: 
+    [3] },
+
+    /*preg 34*/
+    { q: "De las siguientes señales de tránsito, ¿cuál o cuáles corresponden a señales amarillas con forma de rombo?", 
+  options: [
+    "A) Puente angosto",
+    "B) Angostamiento de la vía",
+    "C) Dirección obligada",
+    "D) Zona escolar",
+    "E) Bifurcación o cruce en T",
+    "F) Cruce ferroviario"], answer: 
+    [0, 1, 4, 5] },
+
+    /*preg 35*/
+    { q: "Usted se encuentra en lugar de un accidente. ¿Qué hace para ayudar de mejor forma a una persona herida que está con una fuerte hemorragia en la parte inferior de una pierna?", 
+  options: [
+    "A) La sienta para detener el sangrado.",
+    "B) La mantiene tendida con la pierna herida en alto.",
+    "C) Aplica presión manual firme sobre la herida con un paño limpio y luego la venda.",
+    "D) La deja caminar para buscar ayuda."], answer: 
+    [1, 2] },
+];
+
+let shuffled = [];
+let userAnswers = [];
+let locked = false;
+
+function shuffleQuestions(){
+  shuffled = [...questions].sort(() => Math.random() - 0.5);
+}
+
+function loadQuiz(){
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = "";
+
+  shuffled.forEach((q,i)=>{
+    let div = document.createElement("div");
+    div.classList.add("question");
+    div.innerHTML = `<b>${i+1}. ${q.q}</b>`;
+
+    q.options.forEach((opt,j)=>{
+      let optDiv = document.createElement("div");
+      optDiv.classList.add("option");
+      optDiv.innerText = opt;
+
+      optDiv.onclick = () => {
+        if(locked) return;
+        if(!userAnswers[i]) userAnswers[i] = [];
+
+        if(userAnswers[i].includes(j)){
+          userAnswers[i] = userAnswers[i].filter(x => x !== j);
+          optDiv.classList.remove("selected");
+        } else {
+          userAnswers[i].push(j);
+          optDiv.classList.add("selected");
+        }
+      };
+
+      div.appendChild(optDiv);
+    });
+
+    quiz.appendChild(div);
+  });
+}
+
+function submitQuiz(){
+  locked = true;
+  let correct = 0;
+
+  shuffled.forEach((q,i)=>{
+    if(JSON.stringify((userAnswers[i]||[]).sort()) === JSON.stringify(q.answer.sort())) correct++;
+  });
+
+  let errors = shuffled.length - correct;
+  let percent = Math.round((correct/shuffled.length)*100);
+
+  let good = ["¡Excelente!","Muy bien","Casi perfecto","¡Sigue así!","Gran trabajo"];
+  let bad = ["No te rindas","Sigue intentando","Tú puedes","Ánimo","La próxima será mejor"];
+
+  let msg = errors > 3
+    ? bad[Math.floor(Math.random()*bad.length)]
+    : good[Math.floor(Math.random()*good.length)];
+
+  document.getElementById("result").innerHTML = `
+    <p><b>Puntaje:</b> ${percent}%</p>
+    <p><b>Aciertos:</b> ${correct} de ${shuffled.length}</p>
+    <p>${msg}</p>
+  `;
+}
+
+function goToReview(){
+  document.getElementById("quizView").classList.add("hidden");
+  document.getElementById("reviewView").classList.remove("hidden");
+  review();
+}
+
+function backToQuiz(){
+  document.getElementById("quizView").classList.remove("hidden");
+  document.getElementById("reviewView").classList.add("hidden");
+}
+
+function review(){
+  const section = document.getElementById("reviewSection");
+  section.innerHTML = "";
+
+  let grid = document.createElement("div");
+  grid.classList.add("grid");
+
+  shuffled.forEach((q,i)=>{
+    let box = document.createElement("div");
+    if(JSON.stringify((userAnswers[i]||[]).sort()) === JSON.stringify(q.answer.sort())){
+      box.classList.add("green");
+    } else {
+      box.classList.add("red");
+    }
+    box.innerText = i+1;
+    grid.appendChild(box);
+
+    let reviewQ = document.createElement("div");
+    reviewQ.classList.add("question");
+    reviewQ.innerHTML = `<b>${i+1}. ${q.q}</b>`;
+
+    q.options.forEach((opt,j)=>{
+      let optDiv = document.createElement("div");
+      optDiv.classList.add("option");
+      optDiv.innerText = opt;
+
+      if(q.answer.includes(j)) optDiv.classList.add("correct");
+      if((userAnswers[i]||[]).includes(j) && !q.answer.includes(j)) optDiv.classList.add("incorrect");
+
+      reviewQ.appendChild(optDiv);
+    });
+
+    section.appendChild(reviewQ);
+  });
+
+  section.appendChild(grid);
+}
+
+function restart(){
+  locked = false;
+  userAnswers = [];
+  shuffleQuestions();
+  document.getElementById("result").innerHTML = "";
+  backToQuiz();
+  loadQuiz();
+}
+
+shuffleQuestions();
+loadQuiz();
+</script>
+
+<!-- Librería para capturas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+function takeScreenshot(){
+  const result = document.getElementById("result");
+
+  if(!result.innerText.trim()){
+    alert("Primero debes finalizar el examen");
+    return;
+  }
+
+  html2canvas(result).then(canvas => {
+    let link = document.createElement('a');
+    link.download = 'resultado_examen.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+</script>
+
+</body>
+</html>
